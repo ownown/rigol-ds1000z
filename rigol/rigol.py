@@ -1,6 +1,6 @@
 from enum import IntEnum
 from telnetlib import Telnet
-
+from typing import List
 
 class Rigol:
     class Command:
@@ -45,52 +45,52 @@ class Rigol:
         self._telnet = Telnet(ip, port)
     
 
-    def __send_command(self, command):
+    def __send_command(self, command) -> None:
         self._telnet.write(command.encode('ascii'))
     
 
-    def __send_query(self, query):
+    def __send_query(self, query) -> str:
         self._telnet.write(query.encode('ascii'))
         return self._telnet.read_until(b'\n', 2).decode('ascii').strip()
 
 
-    def __data_query(self, query):
+    def __data_query(self, query) -> List[int]:
         self._telnet.write(query.encode('ascii'))
         return [x for x in self._telnet.read_until(b'\n', 1)]
 
 
-    def get_instrument_string(self):
+    def get_instrument_string(self) -> str:
         keys = ['Make', 'Model', 'Serial #', 'SW Version']
         return '\n'.join([f'{k:>10} : {v}' for k,v in zip(keys, self.__send_query(self.Command.QUERY_ID_STRING).split(','))])
     
 
-    def get_waveform_info(self):
+    def get_waveform_info(self) -> List[int]:
         return list(map(int, self.__send_query(self.Command.WAVEFORM_PREAMBLE).split(',')[:3]))
 
 
-    def stop(self):
+    def stop(self) -> None:
         self.__send_command(self.Command.STOP_SCOPE)
 
 
-    def set_channel(self, channel):
+    def set_channel(self, channel) -> None:
         self.__send_command(self.Command.WAVEFORM_SET_CHANNEL.format(channel=channel))
 
 
-    def set_waveform_format(self, format):
+    def set_waveform_format(self, format) -> None:
         self.__send_command(self.Command.WAVEFORM_SET_FORMAT.format(format=format))
     
 
-    def set_waveform_mode(self, mode):
+    def set_waveform_mode(self, mode) -> None:
         self.__send_command(self.Command.WAVEFORM_SET_MODE.format(mode=mode))
 
 
-    def get_data(self, start_point, stop_point):
+    def get_data(self, start_point, stop_point) -> List[int]:
         self.__send_command(self.Command.WAVEFORM_SET_START.format(start=start_point))
         self.__send_command(self.Command.WAVEFORM_SET_STOP.format(stop=stop_point))
         return self.__data_query(self.Command.WAVEFORM_QUERY_DATA)
 
 
-    def get_all_channel_data(self, channel):
+    def get_all_channel_data(self, channel) -> List[int]:
         self.stop()
         self.set_channel(channel)
 
